@@ -1,0 +1,28 @@
+# Miscellaneous
+*.class
+*.log
+*.pyc
+*.swp
+.DS_Store
+.atom/
+.buildlog/
+.history
+.svn/
+
+# IntelliJ
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# Flutter
+.metadata
+.packages
+build/
+ios/
+android/
+web/
+# Generated files
+*.g.dart
+*.freezed.dart
+pubspec.lock
