@@ -1,100 +1,77 @@
-import 'dart:convert';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
+import 'package:divelogtest/services/database_helper.dart';
+
+// Import web storage conditionally
+import 'storage_service_web.dart' if (dart.library.html) 'storage_service_web.dart' as web_storage;
 
 class StorageService {
-  static const String _divesKey = 'dive_sessions';
-  static const String _userProfileKey = 'user_profile';
+  final _dbHelper = kIsWeb ? null : DatabaseHelper();
+  final _webStorage = kIsWeb ? web_storage.WebStorageService() : null;
 
-  static Future<void> saveDiveSessions(List<Map<String, dynamic>> sessions) async {
+  Future<void> saveDiveSessions(List<Map<String, dynamic>> sessions) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonString = jsonEncode(sessions);
-      await prefs.setString(_divesKey, jsonString);
+      if (kIsWeb) {
+        await _webStorage!.saveDiveSessions(sessions);
+      } else {
+        for (var session in sessions) {
+          await _dbHelper!.insertDiveSession(session);
+        }
+      }
+      debugPrint('${sessions.length} dive sessions saved');
     } catch (e) {
       debugPrint('Error saving dive sessions: $e');
       rethrow;
     }
   }
 
-  static Future<List<Map<String, dynamic>>> loadDiveSessions() async {
+  Future<List<Map<String, dynamic>>> loadDiveSessions() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonString = prefs.getString(_divesKey);
-      if (jsonString == null || jsonString.isEmpty) return [];
-
-      final List<dynamic> decoded = jsonDecode(jsonString);
-      final List<Map<String, dynamic>> validSessions = [];
-      
-      for (var item in decoded) {
-        if (item is Map<String, dynamic>) {
-          if (_isValidDiveSession(item)) {
-            validSessions.add(item);
-          } else {
-            debugPrint('Skipping invalid dive session: missing required fields');
-          }
-        }
+      if (kIsWeb) {
+        return await _webStorage!.loadDiveSessions();
+      } else {
+        return await _dbHelper!.getAllDiveSessions();
       }
-      
-      if (validSessions.length < decoded.length) {
-        await saveDiveSessions(validSessions);
-      }
-      
-      return validSessions;
     } catch (e) {
-      debugPrint('Error loading dive sessions: $e. Returning empty list.');
-      await SharedPreferences.getInstance().then((prefs) => prefs.remove(_divesKey));
+      debugPrint('Error loading dive sessions: $e');
       return [];
     }
   }
 
-  static bool _isValidDiveSession(Map<String, dynamic> session) {
-    final requiredFields = ['id', 'userId', 'cliente', 'operadoraBuceo', 'lugarBuceo', 
-      'tipoBuceo', 'horaEntrada', 'horaSalida', 'createdAt', 'updatedAt'];
-    return requiredFields.every((field) => session.containsKey(field) && session[field] != null);
-  }
-
-  static Future<void> saveUserProfile(Map<String, dynamic> profile) async {
+  Future<void> saveUserProfile(Map<String, dynamic> profile) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonString = jsonEncode(profile);
-      await prefs.setString(_userProfileKey, jsonString);
+      if (kIsWeb) {
+        await _webStorage!.saveUserProfile(profile);
+      } else {
+        await _dbHelper!.saveUserProfile(profile);
+      }
+      debugPrint('User profile saved');
     } catch (e) {
       debugPrint('Error saving user profile: $e');
       rethrow;
     }
   }
 
-  static Future<Map<String, dynamic>?> loadUserProfile() async {
+  Future<Map<String, dynamic>?> loadUserProfile(String userId) async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      final jsonString = prefs.getString(_userProfileKey);
-      if (jsonString == null || jsonString.isEmpty) return null;
-
-      final decoded = jsonDecode(jsonString);
-      if (decoded is Map<String, dynamic> && _isValidUserProfile(decoded)) {
-        return decoded;
+      if (kIsWeb) {
+        return await _webStorage!.loadUserProfile(userId);
+      } else {
+        return await _dbHelper!.getUserProfile(userId);
       }
-      
-      debugPrint('Invalid user profile data. Removing corrupted data.');
-      await prefs.remove(_userProfileKey);
-      return null;
     } catch (e) {
-      debugPrint('Error loading user profile: $e. Returning null.');
-      await SharedPreferences.getInstance().then((prefs) => prefs.remove(_userProfileKey));
+      debugPrint('Error loading user profile: $e');
       return null;
     }
   }
 
-  static bool _isValidUserProfile(Map<String, dynamic> profile) {
-    final requiredFields = ['id', 'name', 'email', 'createdAt', 'updatedAt'];
-    return requiredFields.every((field) => profile.containsKey(field) && profile[field] != null);
-  }
-
-  static Future<void> clearAll() async {
+  Future<void> clearAll() async {
     try {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.clear();
+      if (kIsWeb) {
+        await _webStorage!.clearAll();
+      } else {
+        await _dbHelper!.clearAll();
+      }
+      debugPrint('All storage cleared');
     } catch (e) {
       debugPrint('Error clearing storage: $e');
       rethrow;

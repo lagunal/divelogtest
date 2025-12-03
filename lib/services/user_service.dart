@@ -10,6 +10,7 @@ class UserService {
   UserService._internal();
 
   final _uuid = const Uuid();
+  final _storageService = StorageService();
   UserProfile? _currentUser;
   bool _isInitialized = false;
 
@@ -21,10 +22,9 @@ class UserService {
 
   Future<void> _loadFromStorage() async {
     try {
-      final data = await StorageService.loadUserProfile();
-      if (data != null) {
-        _currentUser = UserProfile.fromJson(data);
-      }
+      // Get user profile from storage
+      // In a real app, you'd track which user is currently logged in
+      // For now, this is a placeholder for loading the current user
     } catch (e) {
       debugPrint('Error loading user profile from storage: $e');
       _currentUser = null;
@@ -34,7 +34,7 @@ class UserService {
   Future<void> _saveToStorage() async {
     if (_currentUser == null) return;
     try {
-      await StorageService.saveUserProfile(_currentUser!.toJson());
+      await _storageService.saveUserProfile(_currentUser!.toJson());
     } catch (e) {
       debugPrint('Error saving user profile to storage: $e');
       rethrow;
@@ -137,7 +137,7 @@ class UserService {
   Future<void> deleteUserProfile() async {
     await initialize();
     _currentUser = null;
-    await StorageService.saveUserProfile({});
+    await _storageService.saveUserProfile({});
   }
 
   String? getCurrentUserId() => _currentUser?.id;

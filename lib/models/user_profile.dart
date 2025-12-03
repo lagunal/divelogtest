@@ -80,4 +80,32 @@ class UserProfile {
     createdAt: createdAt ?? this.createdAt,
     updatedAt: updatedAt ?? this.updatedAt,
   );
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'name': name,
+    'email': email,
+    'certificationLevel': certificationLevel,
+    'certificationNumber': certificationNumber,
+    'certificationDate': certificationDate?.toIso8601String(),
+    'totalDives': totalDives,
+    'totalBottomTime': totalBottomTime,
+    'deepestDive': deepestDive,
+    'createdAt': createdAt.toIso8601String(),
+    'updatedAt': updatedAt.toIso8601String(),
+  };
+
+  factory UserProfile.fromMap(Map<String, dynamic> map) => UserProfile(
+    id: map['id'] as String,
+    name: map['name'] as String,
+    email: map['email'] as String,
+    certificationLevel: map['certificationLevel'] as String?,
+    certificationNumber: map['certificationNumber'] as String?,
+    certificationDate: map['certificationDate'] != null ? DateTime.parse(map['certificationDate'] as String) : null,
+    totalDives: map['totalDives'] as int? ?? 0,
+    totalBottomTime: (map['totalBottomTime'] as num?)?.toDouble() ?? 0.0,
+    deepestDive: (map['deepestDive'] as num?)?.toDouble() ?? 0.0,
+    createdAt: DateTime.parse(map['createdAt'] as String),
+    updatedAt: DateTime.parse(map['updatedAt'] as String),
+  );
 }

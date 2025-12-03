@@ -9,6 +9,7 @@ class DiveService {
   DiveService._internal();
 
   final _uuid = const Uuid();
+  final _storageService = StorageService();
   List<DiveSession> _sessions = [];
   bool _isInitialized = false;
 
@@ -20,7 +21,7 @@ class DiveService {
 
   Future<void> _loadFromStorage() async {
     try {
-      final data = await StorageService.loadDiveSessions();
+      final data = await _storageService.loadDiveSessions();
       _sessions = data.map((json) => DiveSession.fromJson(json)).toList();
       _sessions.sort((a, b) => b.horaEntrada.compareTo(a.horaEntrada));
     } catch (e) {
@@ -32,7 +33,7 @@ class DiveService {
   Future<void> _saveToStorage() async {
     try {
       final data = _sessions.map((session) => session.toJson()).toList();
-      await StorageService.saveDiveSessions(data);
+      await _storageService.saveDiveSessions(data);
     } catch (e) {
       debugPrint('Error saving dive sessions to storage: $e');
       rethrow;
