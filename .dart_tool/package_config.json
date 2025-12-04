@@ -87,7 +87,7 @@
     },
     {
       "name": "flutter",
-      "rootUri": "file:///Applications/MAMP/htdocs/flutter/packages/flutter",
+      "rootUri": "file:///Users/ludwinglaguna/Dev%20Projects/flutter/flutter/packages/flutter",
       "packageUri": "lib/",
       "languageVersion": "3.8"
     },
@@ -105,13 +105,13 @@
     },
     {
       "name": "flutter_test",
-      "rootUri": "file:///Applications/MAMP/htdocs/flutter/packages/flutter_test",
+      "rootUri": "file:///Users/ludwinglaguna/Dev%20Projects/flutter/flutter/packages/flutter_test",
       "packageUri": "lib/",
       "languageVersion": "3.8"
     },
     {
       "name": "flutter_web_plugins",
-      "rootUri": "file:///Applications/MAMP/htdocs/flutter/packages/flutter_web_plugins",
+      "rootUri": "file:///Users/ludwinglaguna/Dev%20Projects/flutter/flutter/packages/flutter_web_plugins",
       "packageUri": "lib/",
       "languageVersion": "3.8"
     },
@@ -285,7 +285,7 @@
     },
     {
       "name": "sky_engine",
-      "rootUri": "file:///Applications/MAMP/htdocs/flutter/bin/cache/pkg/sky_engine",
+      "rootUri": "file:///Users/ludwinglaguna/Dev%20Projects/flutter/flutter/bin/cache/pkg/sky_engine",
       "packageUri": "lib/",
       "languageVersion": "3.8"
     },
@@ -418,7 +418,7 @@
   ],
   "generator": "pub",
   "generatorVersion": "3.10.1",
-  "flutterRoot": "file:///Applications/MAMP/htdocs/flutter",
+  "flutterRoot": "file:///Users/ludwinglaguna/Dev%20Projects/flutter/flutter",
   "flutterVersion": "3.38.3",
   "pubCache": "file:///Users/ludwinglaguna/.pub-cache"
 }
