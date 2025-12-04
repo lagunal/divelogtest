@@ -28,10 +28,10 @@ A mobile application for divers to register and track their diving sessions. The
   - `forgot_password_screen.dart`: Password reset functionality
   - `home_screen.dart`: Dashboard with recent dives and quick actions
   - `dive_list_screen.dart`: List view of all logged dives
-  - `dive_detail_screen.dart`: Detailed view of a single dive session
-  - `add_edit_dive_screen.dart`: Form to add or edit dive sessions
+  - `add_edit_dive_screen.dart`: Form to add or edit dive sessions (includes export functionality)
   - `profile_screen.dart`: User profile and settings
   - `statistics_screen.dart`: Dive statistics and analytics
+  - `main_navigation_screen.dart`: Main navigation structure with bottom tabs and drawer
 
 - **widgets/**: Reusable UI components
   - `dive_card.dart`: Card widget to display dive summary
@@ -100,9 +100,12 @@ Each dive session will capture the following information:
   - [x] Dive session model with toJson/fromJson
   - [x] User profile model
   - [x] Dive operator model
-- [x] Set up local storage (shared_preferences dependency added)
+- [x] Set up local storage (sqflite dependency added)
 
-### Phase 2: Core Services ✓
+### Phase 2: Core Services (Migration to SQLite Required)
+> **Current Status**: Phase 2 is currently implemented using `shared_preferences`. This phase needs to be updated to use `sqflite` for better data persistence, querying capabilities, and scalability.
+
+#### Completed (with shared_preferences) ✓
 - [x] Implement DiveService
   - [x] Create dive session
   - [x] Read dive sessions (all, by date, by location)
@@ -114,9 +117,70 @@ Each dive session will capture the following information:
   - [x] Get user profile
   - [x] Track total dives, total bottom time
 - [x] Implement StorageService
-  - [x] Save/load data from local storage
+  - [x] Save/load data from local storage (shared_preferences)
   - [x] Data serialization/deserialization
   - [x] Error handling for corrupted data
+
+#### Migration Tasks (shared_preferences → sqflite)
+- [ ] **Database Setup**
+  - [ ] Add sqflite and path dependencies to pubspec.yaml
+  - [ ] Create DatabaseHelper class to manage SQLite database
+  - [ ] Define database version and upgrade paths
+  - [ ] Implement database initialization on app startup
+  
+- [ ] **Database Schema Design**
+  - [ ] Create table schema for users
+    - [ ] Define columns: id, name, email, certificationLevel, certificationNumber, certificationDate, totalDives, totalBottomTime, deepestDive, createdAt, updatedAt
+    - [ ] Set up primary key and indexes
+  - [ ] Create table schema for dive_sessions
+    - [ ] Define columns for all DiveSession model fields
+    - [ ] Set up primary key (id) and foreign key (userId)
+    - [ ] Add indexes for frequently queried fields (userId, horaEntrada, lugarBuceo, operadoraBuceo)
+  - [ ] Create table schema for dive_details (optional, if separating detailed info)
+    - [ ] Define columns for detailed timing and depth measurements
+    - [ ] Set up one-to-one relationship with dive_sessions
+  
+- [ ] **StorageService Migration**
+  - [ ] Refactor StorageService to use SQLite instead of shared_preferences
+  - [ ] Implement raw SQL queries or use sqflite query builders
+  - [ ] Add methods for:
+    - [ ] Open/close database connections
+    - [ ] Execute CREATE TABLE statements
+    - [ ] Handle database upgrades (onUpgrade callback)
+    - [ ] Transaction support for batch operations
+  - [ ] Remove shared_preferences dependencies from StorageService
+  
+- [ ] **DiveService Migration**
+  - [ ] Update createDive() to use SQL INSERT
+  - [ ] Update getAllDives() to use SQL SELECT with ORDER BY
+  - [ ] Update getDivesByLocation() to use SQL WHERE clause
+  - [ ] Update getDivesByDateRange() to use SQL WHERE with date filtering
+  - [ ] Update updateDive() to use SQL UPDATE
+  - [ ] Update deleteDive() to use SQL DELETE
+  - [ ] Update search functionality to use SQL LIKE queries
+  - [ ] Refactor sample data loading to insert into SQLite tables
+  
+- [ ] **UserService Migration**
+  - [ ] Update saveUserProfile() to use SQL INSERT or UPDATE (UPSERT)
+  - [ ] Update getUserProfile() to use SQL SELECT
+  - [ ] Update statistics calculations to use SQL aggregate functions (COUNT, SUM, MAX)
+  - [ ] Remove shared_preferences usage from UserService
+  
+- [ ] **Data Migration Strategy**
+  - [ ] Create migration utility to read existing data from shared_preferences
+  - [ ] Parse JSON data from shared_preferences
+  - [ ] Insert parsed data into SQLite tables
+  - [ ] Validate migrated data integrity
+  - [ ] Clear shared_preferences after successful migration
+  - [ ] Handle edge cases (no existing data, corrupted data)
+  
+- [ ] **Testing and Validation**
+  - [ ] Test all CRUD operations with SQLite
+  - [ ] Verify data persistence after app restart
+  - [ ] Test query performance with large datasets
+  - [ ] Validate foreign key constraints
+  - [ ] Test data migration from shared_preferences to SQLite
+  - [ ] Handle SQLite-specific errors (database locked, disk full, etc.)
 
 ### Phase 3: UI Implementation
 - [x] Home Screen ✓
@@ -143,6 +207,11 @@ Each dive session will capture the following information:
   - [x] Form validation for all required fields
   - [x] Save/Update functionality integrated with DiveService
   - [x] Modern, scrollable form layout with organized sections
+  - [ ] Export single dive session (PDF/CSV)
+    - [ ] Add export button in app bar or floating action button
+    - [ ] Implement PDF export with dive details
+    - [ ] Implement CSV export with dive details
+    - [ ] Add file download/sharing functionality
 - [x] Navigation Structure ✓
   - [x] Bottom Tab Navigation
     - [x] Home tab
@@ -154,11 +223,6 @@ Each dive session will capture the following information:
     - [x] App navigation menu with selected state
     - [x] Settings menu item
     - [x] About dialog with app information
-- [ ] Dive Detail Screen
-  - [ ] Display all dive information
-  - [ ] Edit option
-  - [ ] Share dive log
-  - [ ] Export single dive session (PDF/CSV)
 - [ ] Profile Screen
   - [ ] User information
   - [ ] Certifications
@@ -215,23 +279,30 @@ Each dive session will capture the following information:
   - [ ] Implement real-time sync
   - [ ] Data security rules
 - [ ] Offline Support and Sync
-  - [ ] Use local storage (SharedPreferences) when offline or no internet connection
+  - [ ] Use local SQLite database when offline or no internet connection
   - [ ] Detect internet connectivity status
-  - [ ] Queue dive sessions created/updated while offline
+  - [ ] Queue dive sessions created/updated while offline (store sync status in SQLite)
   - [ ] Automatically sync queued data to Firestore when internet connection is restored
   - [ ] Handle sync conflicts and merge strategies
   - [ ] Show sync status indicator in UI
+  - [ ] Maintain SQLite as offline cache even after Firebase integration
 - [ ] Export Dive Logs (Mandatory)
-  - [ ] Export single dive session to PDF format (from Dive Detail Screen)
-  - [ ] Export single dive session to CSV format (from Dive Detail Screen)
-  - [ ] Implement sharing/download functionality for single dive
+  - [ ] Export single dive session to PDF format (from Add/Edit Dive Screen)
+  - [ ] Export single dive session to CSV format (from Add/Edit Dive Screen)
+  - [ ] Implement download functionality for exported files
 - [ ] Additional Features (Optional)
   - [ ] Batch export from Dive List Screen (export filtered/all dives to PDF/CSV)
+  - [ ] Share dive log functionality (share exported PDF/CSV via email, messaging apps, etc.)
   - [ ] Dive buddy tracking
   - [ ] GPS integration for dive sites
   - [ ] Dive planning tools
   - [ ] Safety stop timer
   - [ ] Decompression calculator
+  - [ ] Supervisor signature functionality
+    - [ ] Digital signature capture on Add/Edit Dive Screen
+    - [ ] Store signature as image in dive session
+    - [ ] Display supervisor signature in dive logs and exports
+    - [ ] Signature validation and verification
 
 ### Phase 5: Enhanced Features
 - [ ] Reusable Widgets
@@ -291,7 +362,229 @@ Each dive session will capture the following information:
   - [ ] Implement server-side payment validation
   - [ ] Add receipt verification
 
-## Firestore Database Schema
+## SQLite Database Schema (Local Storage - Phases 1-3)
+
+### Tables Structure
+
+#### 1. **users** Table
+Stores user profile information locally.
+
+**Schema**:
+```sql
+CREATE TABLE users (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  email TEXT UNIQUE,
+  certification_level TEXT,
+  certification_number TEXT,
+  certification_date INTEGER,
+  total_dives INTEGER DEFAULT 0,
+  total_bottom_time REAL DEFAULT 0,
+  deepest_dive REAL DEFAULT 0,
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL
+);
+
+CREATE INDEX idx_users_email ON users(email);
+```
+
+---
+
+#### 2. **dive_sessions** Table
+Stores dive session records.
+
+**Schema**:
+```sql
+CREATE TABLE dive_sessions (
+  id TEXT PRIMARY KEY,
+  user_id TEXT NOT NULL,
+  
+  -- General Information
+  cliente TEXT NOT NULL,
+  operadora_buceo TEXT NOT NULL,
+  direccion_operadora TEXT,
+  lugar_buceo TEXT NOT NULL,
+  tipo_buceo TEXT NOT NULL,
+  nombre_buzos TEXT NOT NULL,  -- JSON array stored as TEXT
+  supervisor_buceo TEXT,
+  
+  -- Equipment
+  tabla_buceo TEXT,
+  aparato_respiratorio TEXT,
+  presion_cilindro REAL,
+  tipo_traje TEXT,
+  mezcla_utilizada TEXT,
+  
+  -- Water Conditions
+  estado_mar INTEGER,
+  visibilidad REAL,
+  temperatura_superior REAL,
+  temperatura_agua REAL,
+  corriente_agua TEXT,
+  tipo_agua TEXT,
+  
+  -- Dive Times and Depth
+  hora_entrada INTEGER NOT NULL,
+  hora_salida INTEGER NOT NULL,
+  maxima_profundidad REAL NOT NULL,
+  tiempo_total_inmersion REAL NOT NULL,
+  tiempo_fondo REAL NOT NULL,
+  
+  -- Work and Safety
+  descripcion_trabajo TEXT,
+  descompresion_utilizada TEXT,
+  enfermedad_lesion TEXT,
+  tiempo_supervision_acumulado REAL,
+  tiempo_buceo_acumulado REAL,
+  
+  -- Metadata
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Indexes for efficient querying
+CREATE INDEX idx_dive_sessions_user_id ON dive_sessions(user_id);
+CREATE INDEX idx_dive_sessions_hora_entrada ON dive_sessions(hora_entrada DESC);
+CREATE INDEX idx_dive_sessions_lugar_buceo ON dive_sessions(lugar_buceo);
+CREATE INDEX idx_dive_sessions_operadora_buceo ON dive_sessions(operadora_buceo);
+CREATE INDEX idx_dive_sessions_user_date ON dive_sessions(user_id, hora_entrada DESC);
+```
+
+---
+
+#### 3. **dive_details** Table (Optional - for detailed timing info)
+Stores additional dive detail measurements.
+
+**Schema**:
+```sql
+CREATE TABLE dive_details (
+  id TEXT PRIMARY KEY,
+  dive_session_id TEXT NOT NULL UNIQUE,
+  user_id TEXT NOT NULL,
+  
+  -- Timing Details
+  hora_entrada INTEGER NOT NULL,
+  hora_salida INTEGER NOT NULL,
+  tiempo_intervalo_superficie REAL,
+  tiempo_fondo REAL NOT NULL,
+  tiempo_total_inmersion REAL NOT NULL,
+  
+  -- Depth and Decompression
+  maxima_profundidad REAL NOT NULL,
+  inicio_descompresion INTEGER,
+  descompresion_completa INTEGER,
+  
+  -- Additional Notes
+  observaciones TEXT,
+  incidentes TEXT,
+  
+  -- Metadata
+  created_at INTEGER NOT NULL,
+  updated_at INTEGER NOT NULL,
+  
+  FOREIGN KEY (dive_session_id) REFERENCES dive_sessions(id) ON DELETE CASCADE,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+CREATE INDEX idx_dive_details_session ON dive_details(dive_session_id);
+```
+
+---
+
+### Data Types Mapping
+
+| Flutter/Dart Type | SQLite Type | Notes |
+|------------------|-------------|-------|
+| String | TEXT | UTF-8 encoded |
+| int | INTEGER | 64-bit signed integer |
+| double | REAL | 64-bit floating point |
+| bool | INTEGER | 0 = false, 1 = true |
+| DateTime | INTEGER | Milliseconds since epoch |
+| List<String> | TEXT | JSON array as string |
+| Map<String, dynamic> | TEXT | JSON object as string |
+
+---
+
+### Common Queries (SQLite)
+
+**1. Get all dives for a user (most recent first)**:
+```dart
+final List<Map<String, dynamic>> results = await db.query(
+  'dive_sessions',
+  where: 'user_id = ?',
+  whereArgs: [userId],
+  orderBy: 'hora_entrada DESC',
+);
+```
+
+**2. Search dives by location**:
+```dart
+final results = await db.query(
+  'dive_sessions',
+  where: 'user_id = ? AND lugar_buceo LIKE ?',
+  whereArgs: [userId, '%$searchTerm%'],
+  orderBy: 'hora_entrada DESC',
+);
+```
+
+**3. Get dives within date range**:
+```dart
+final results = await db.query(
+  'dive_sessions',
+  where: 'user_id = ? AND hora_entrada >= ? AND hora_entrada <= ?',
+  whereArgs: [userId, startTimestamp, endTimestamp],
+  orderBy: 'hora_entrada DESC',
+);
+```
+
+**4. Get deepest dives**:
+```dart
+final results = await db.query(
+  'dive_sessions',
+  where: 'user_id = ?',
+  whereArgs: [userId],
+  orderBy: 'maxima_profundidad DESC',
+  limit: 10,
+);
+```
+
+**5. Calculate user statistics**:
+```dart
+final result = await db.rawQuery('''
+  SELECT 
+    COUNT(*) as total_dives,
+    SUM(tiempo_fondo) as total_bottom_time,
+    MAX(maxima_profundidad) as deepest_dive
+  FROM dive_sessions
+  WHERE user_id = ?
+''', [userId]);
+```
+
+**6. Insert dive with transaction**:
+```dart
+await db.transaction((txn) async {
+  // Insert dive session
+  await txn.insert('dive_sessions', diveSessionData);
+  
+  // Insert dive details (if using separate table)
+  await txn.insert('dive_details', diveDetailsData);
+  
+  // Update user statistics
+  await txn.rawUpdate('''
+    UPDATE users 
+    SET total_dives = total_dives + 1,
+        total_bottom_time = total_bottom_time + ?,
+        updated_at = ?
+    WHERE id = ?
+  ''', [tiempoFondo, DateTime.now().millisecondsSinceEpoch, userId]);
+});
+```
+
+---
+
+## Firestore Database Schema (Cloud Storage - Phase 4+)
 
 ### Collections Structure
 
@@ -329,7 +622,7 @@ Stores user profile and authentication information.
 ---
 
 #### 2. **dive_sessions** Collection
-Stores individual dive session records.
+Stores high-level dive session information and references to dive details.
 
 **Document ID**: Auto-generated by Firestore
 
@@ -348,6 +641,13 @@ Stores individual dive session records.
   "nombreBuzos": array<string>,            // List of diver names participating
   "supervisorBuceo": string,               // Dive supervisor name
   
+  // Equipment
+  "tablaBuceo": string,                    // Dive table used
+  "aparatoRespiratorio": string,           // Breathing apparatus type
+  "presionCilindro": number,               // Cylinder pressure in PSI or bar
+  "tipoTraje": string,                     // Suit type
+  "mezclaUtilizada": string,               // Gas mixture used
+  
   // Water Conditions
   "estadoMar": number,                     // Sea state (Beaufort scale 0-12)
   "visibilidad": number,                   // Visibility in meters
@@ -356,15 +656,12 @@ Stores individual dive session records.
   "corrienteAgua": string,                 // Water current description
   "tipoAgua": string,                      // Water type: "Dulce", "Salada", "Salobre"
   
-  // Dive Details
+  // Quick Stats (for list views without loading details)
   "horaEntrada": timestamp,                // Entry time (dive start)
-  "maximaProfundidad": number,             // Maximum depth reached in meters
-  "tiempoIntervaloSuperficie": number,     // Surface interval time in minutes
-  "tiempoFondo": number,                   // Bottom time in minutes
-  "inicioDescompresion": timestamp?,       // Decompression start time (optional)
-  "descompresionCompleta": timestamp?,     // Decompression complete time (optional)
-  "tiempoTotalInmersion": number,          // Total immersion time in minutes
   "horaSalida": timestamp,                 // Exit time (dive end)
+  "maximaProfundidad": number,             // Maximum depth reached in meters
+  "tiempoTotalInmersion": number,          // Total immersion time in minutes
+  "tiempoFondo": number,                   // Bottom time in minutes
   
   // Work and Safety
   "descripcionTrabajo": string,            // Description of work performed
@@ -394,7 +691,54 @@ Stores individual dive session records.
 
 ---
 
-#### 3. **dive_operators** Collection (Future Enhancement)
+#### 3. **dive_details** Collection
+Stores detailed dive measurements and timing information for each dive session.
+
+**Document ID**: Same as the corresponding dive_session document ID (1-to-1 relationship)
+
+**Fields**:
+```
+{
+  "id": string,                            // Same as document ID (matches dive_session ID)
+  "diveSessionId": string,                 // Reference to dive_sessions collection
+  "userId": string,                        // Reference to users collection (denormalized for security rules)
+  
+  // Timing Details
+  "horaEntrada": timestamp,                // Entry time (dive start)
+  "horaSalida": timestamp,                 // Exit time (dive end)
+  "tiempoIntervaloSuperficie": number,     // Surface interval time in minutes
+  "tiempoFondo": number,                   // Bottom time in minutes
+  "tiempoTotalInmersion": number,          // Total immersion time in minutes
+  
+  // Depth and Decompression
+  "maximaProfundidad": number,             // Maximum depth reached in meters
+  "inicioDescompresion": timestamp?,       // Decompression start time (optional)
+  "descompresionCompleta": timestamp?,     // Decompression complete time (optional)
+  
+  // Additional Notes and Observations
+  "observaciones": string?,                // Additional dive observations (optional)
+  "incidentes": string?,                   // Any incidents or special events (optional)
+  
+  // Metadata
+  "createdAt": timestamp,                  // Record creation timestamp
+  "updatedAt": timestamp                   // Last update timestamp
+}
+```
+
+**Indexes**:
+- `userId` (ascending) + `diveSessionId` (ascending) - for retrieving details by session
+- `diveSessionId` (ascending) - primary lookup index
+
+**Security Rules**:
+- Users can only read/write their own dive details (where userId == auth.uid)
+- `userId` and `diveSessionId` fields are immutable after creation
+- Authentication required for all operations
+
+**Note**: This collection allows for detailed dive information to be loaded on-demand when viewing a specific dive, keeping the main dive_sessions queries lightweight and fast for list views.
+
+---
+
+#### 4. **dive_operators** Collection (Future Enhancement)
 Stores diving operator information for autocomplete and data consistency.
 
 **Document ID**: Auto-generated by Firestore
@@ -424,23 +768,46 @@ Stores diving operator information for autocomplete and data consistency.
 ### Data Relationships
 
 ```
-users (1) ──< dive_sessions (many)
+users (1) ──< dive_sessions (many) ──── dive_details (1)
+  │              │                           │
+  │              └─ userId references user   └─ diveSessionId references dive_session
+  │                                              userId references user (denormalized)
   │
-  └─ userId field in dive_sessions references user document ID
+  └─ userId field links users to their dive sessions
+     Each dive_session has exactly one dive_details document (same ID)
 ```
+
+**Relationship Types:**
+- **users → dive_sessions**: One-to-Many (one user has many dive sessions)
+- **dive_sessions → dive_details**: One-to-One (one session has one details document, linked by same document ID)
+
+**Design Rationale:**
+- **Separation of concerns**: List views only need dive_sessions data (faster queries)
+- **On-demand loading**: Detailed timing/depth info loaded only when viewing a specific dive
+- **Scalability**: Reduces document size and improves query performance for list operations
+- **Flexibility**: Easy to add more detailed measurements without bloating session documents
 
 ### Query Patterns
 
 **Common Queries:**
 
-1. **Get all dives for a user (most recent first)**:
+1. **Get all dives for a user (most recent first)** - For list views:
    ```dart
    collection('dive_sessions')
      .where('userId', isEqualTo: currentUserId)
      .orderBy('horaEntrada', descending: true)
    ```
 
-2. **Get dives by location**:
+2. **Get specific dive with its details** - For detail view:
+   ```dart
+   // Step 1: Get session
+   final session = await collection('dive_sessions').doc(diveId).get();
+   
+   // Step 2: Get details
+   final details = await collection('dive_details').doc(diveId).get();
+   ```
+
+3. **Get dives by location**:
    ```dart
    collection('dive_sessions')
      .where('userId', isEqualTo: currentUserId)
@@ -448,7 +815,7 @@ users (1) ──< dive_sessions (many)
      .orderBy('horaEntrada', descending: true)
    ```
 
-3. **Get dives within date range**:
+4. **Get dives within date range**:
    ```dart
    collection('dive_sessions')
      .where('userId', isEqualTo: currentUserId)
@@ -457,7 +824,7 @@ users (1) ──< dive_sessions (many)
      .orderBy('horaEntrada', descending: true)
    ```
 
-4. **Get deepest dives**:
+5. **Get deepest dives**:
    ```dart
    collection('dive_sessions')
      .where('userId', isEqualTo: currentUserId)
@@ -465,7 +832,22 @@ users (1) ──< dive_sessions (many)
      .limit(10)
    ```
 
-5. **Search dives by text** (requires client-side filtering or Algolia integration):
+6. **Create dive session with details** - Batch write:
+   ```dart
+   final batch = FirebaseFirestore.instance.batch();
+   
+   // Create session
+   final sessionRef = collection('dive_sessions').doc();
+   batch.set(sessionRef, sessionData);
+   
+   // Create details with same ID
+   final detailsRef = collection('dive_details').doc(sessionRef.id);
+   batch.set(detailsRef, detailsData..['diveSessionId'] = sessionRef.id);
+   
+   await batch.commit();
+   ```
+
+7. **Search dives by text** (requires client-side filtering or Algolia integration):
    - Search in: `lugarBuceo`, `operadoraBuceo`, `descripcionTrabajo`
 
 ### Aggregate Calculations
@@ -482,19 +864,30 @@ users (1) ──< dive_sessions (many)
 
 ### Data Migration Notes
 
-**From Local Storage to Firestore**:
-1. Read all dive sessions from SharedPreferences
+**From SQLite to Firestore**:
+1. Read all dive sessions from SQLite database
 2. For each dive session:
    - Link to authenticated user's UID (set userId field)
-   - Convert DateTime to Firestore Timestamp
+   - Convert SQLite INTEGER timestamps to Firestore Timestamp
    - Upload to `dive_sessions` collection
-3. Update user profile statistics
-4. Clear local storage after successful migration
+   - Upload corresponding `dive_details` if using separate collection
+3. Update user profile statistics in Firestore
+4. Mark local SQLite records as synced (do not delete - keep for offline support)
+5. Set up bidirectional sync for future changes
 
 **Timestamp Handling**:
-- Local: `DateTime.parse(json['horaEntrada'])` → ISO 8601 string
+- SQLite: Store as INTEGER (milliseconds since epoch) or TEXT (ISO 8601)
+  - Save: `dateTime.millisecondsSinceEpoch` or `dateTime.toIso8601String()`
+  - Read: `DateTime.fromMillisecondsSinceEpoch(value)` or `DateTime.parse(value)`
 - Firestore: `Timestamp.fromDate(dateTime)` → Firestore Timestamp object
 - Display: `timestamp.toDate()` → Dart DateTime
+
+**SQLite Schema Design**:
+- Use INTEGER for timestamps (more efficient than TEXT)
+- Use TEXT for JSON fields if needed (equipment details, etc.)
+- Use REAL for floating-point numbers (depth, temperature, pressure)
+- Use INTEGER for boolean values (0 = false, 1 = true)
+- Define proper foreign key constraints (userId references users table)
 
 ### Offline Support Strategy
 
@@ -517,7 +910,11 @@ users (1) ──< dive_sessions (many)
 ## Technical Stack
 - **Framework**: Flutter (latest version)
 - **State Management**: StatefulWidget (can upgrade to Provider/Riverpod if needed)
-- **Local Storage**: shared_preferences package (Phase 1-3, 5-6)
+- **Local Storage**: sqflite package (Phase 1-3, 5-6)
+  - SQLite relational database for complex data storage
+  - Better querying, filtering, and data persistence than shared_preferences
+  - Supports relational data with foreign keys
+  - Easier migration path to cloud databases
 - **Cloud Backend**: Firebase (Phase 4)
   - Firebase Authentication for user management
   - Cloud Firestore for cloud database
@@ -525,7 +922,7 @@ users (1) ──< dive_sessions (many)
   - Subscription management
   - Payment processing
   - Receipt validation
-- **Data Format**: JSON (local), Firestore documents (cloud)
+- **Data Format**: SQLite (local), Firestore documents (cloud)
 - **Platform Support**: Android, iOS, Web
 
 ## Design Guidelines
@@ -538,8 +935,13 @@ users (1) ──< dive_sessions (many)
 - Accessibility considerations
 
 ## Notes
-- Phases 1-3, 5-6: Use local storage with shared_preferences
-- Phase 4: Migrate to Firebase for cloud storage and authentication
+- **Phases 1-3, 5-6**: Use local storage with **sqflite** (SQLite database)
+  - Provides robust relational database with SQL querying
+  - Better data persistence and scalability than shared_preferences
+  - Supports complex data relationships and efficient filtering
+- **Phase 2 Migration**: Current implementation uses shared_preferences and needs to be migrated to sqflite
+- **Phase 4**: Migrate to Firebase for cloud storage and authentication
+  - Similar schema structure makes migration easier
 - Include sample dive data for demonstration (Phases 1-5)
 - Focus on offline-first functionality initially
 - Ensure data persistence across app restarts
